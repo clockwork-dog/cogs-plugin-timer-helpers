@@ -7,6 +7,14 @@
     {
       "name": "Timestamps to report",
       "value": { "type": "string", "default": "" }
+    },
+    {
+      "name": "Report if skipped past",
+      "value": { "type": "boolean", "default": false }
+    },
+    {
+      "name": "Allow multiple reports per show",
+      "value": { "type": "boolean", "default": false }
     }
   ],
   "state": [
