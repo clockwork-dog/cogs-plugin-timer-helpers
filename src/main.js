@@ -63,6 +63,12 @@ function setAlertTimeouts() {
   }
 }
 
+function sendTimerStateToCogs() {
+  cogsConnection.setState({
+    "Timer State": timerTicking ? "Ticking" : "Paused",
+  });
+}
+
 cogsConnection.addEventListener("config", ({ config }) => {
   const timestampsToReportString = config["Timestamps to report"];
   if (timestampsToReportString) {
@@ -87,15 +93,11 @@ cogsConnection.addEventListener("message", ({ message }) => {
   }
   // Timer update
   else if (message.type === "adjustable_timer_update") {
-    // console.log(
-    //   "Adjustable timer update",
-    //   message.ticking,
-    //   message.durationMillis
-    // );
     timerTicking = message.ticking;
     timerStartedTickingAt = timerTicking ? Date.now() : 0;
     timerDurationMillis = message.durationMillis;
 
+    sendTimerStateToCogs();
     setAlertTimeouts();
   }
 });

@@ -9,6 +9,17 @@
       "value": { "type": "string", "default": "" }
     }
   ],
+  "state": [
+    {
+      "name": "Timer State",
+      "value": {
+        "type": "option",
+        "options": ["Paused", "Ticking"],
+        "default": "Paused"
+      },
+      "writableFromClient": true
+    }
+  ],
   "events": {
     "fromCogs": [],
     "toCogs": [
