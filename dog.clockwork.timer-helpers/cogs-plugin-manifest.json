@@ -1,0 +1,21 @@
+{
+  "name": "Timer Helpers",
+  "version": "0.1.0",
+  "description": "Various helpers for working with the COGS timer",
+  "icon": "alarm-plus",
+  "config": [
+    {
+      "name": "Timestamps to report",
+      "value": { "type": "string", "default": "" }
+    }
+  ],
+  "events": {
+    "fromCogs": [],
+    "toCogs": [
+      {
+        "name": "Timestamp reached",
+        "value": { "type": "number" }
+      }
+    ]
+  }
+}

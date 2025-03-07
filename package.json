@@ -1,0 +1,14 @@
+{
+  "name": "cogs-plugin-timer-helpers",
+  "version": "0.1.0",
+  "description": "Timer Helpers plugin for COGS",
+  "main": "index.js",
+  "scripts": {
+    "build": "rm -rf dog.clockwork.timer-helpers && mkdir -p dog.clockwork.timer-helpers/node_modules/@clockworkdog/cogs-client/dist/browser && cp src/index.html src/main.js cogs-plugin-manifest.json dog.clockwork.timer-helpers && cp node_modules/@clockworkdog/cogs-client/dist/browser/index.js dog.clockwork.timer-helpers/node_modules/@clockworkdog/cogs-client/dist/browser"
+  },
+  "author": "Clockwork Dog",
+  "license": "MIT",
+  "dependencies": {
+    "@clockworkdog/cogs-client": "2"
+  }
+}
