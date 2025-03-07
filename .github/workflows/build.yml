@@ -1,0 +1,33 @@
+name: Build and publish
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - v*.*.*
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "yarn"
+      - run: yarn
+      - run: yarn build
+      - run: zip -r dog.clockwork.timer-helpers.zip dog.clockwork.timer-helpers
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dog.clockwork.timer-helpers.zip
+          path: dog.clockwork.timer-helpers.zip
+      - uses: ncipollo/release-action@v1
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          allowUpdates: true
+          artifacts: dog.clockwork.timer-helpers.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
