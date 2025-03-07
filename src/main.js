@@ -3,7 +3,7 @@ const { CogsConnection } = COGS;
 const cogsConnection = new CogsConnection();
 
 // Timestamps in seconds
-let timestampsToReport = [];
+let timerStringsToReport = [];
 let reportIfSkippedPast = false;
 let allowMultipleReportsPerShow = false;
 
@@ -16,24 +16,40 @@ let timerDurationMillis = 0;
 let timeoutsReportedThisShow = new Set();
 let alertTimeouts = {};
 
-function formatTime(timeInSeconds) {
-  const minutes = Math.floor(timeInSeconds / 60);
-  const seconds = timeInSeconds % 60;
-  return `${minutes.toString().padStart(2, "0")}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
+// Matches valid timer strings in the format "MM:SS"
+const TIMER_STRING_REGEX = /^([1-9]\d+|0\d|[1-5]\d):([0-5]\d)$/;
+
+function isValidTimerString(timerString) {
+  return TIMER_STRING_REGEX.test(timerString);
 }
 
-function sendTimestampAlertToCogs(timestamp) {
-  const timestampAsInt = parseInt(timestamp);
+// Converts a timer string in the format "MM:SS" to seconds
+function timeInMillisFromTimerString(timerString) {
+  // Extract minutes and seconds using a regex
+  const match = timerString.match(TIMER_STRING_REGEX);
+
+  if (match === null) {
+    return undefined;
+  }
+
+  const minutes = parseInt(match[1]);
+  const seconds = parseInt(match[2]);
+  if (isNaN(minutes) || isNaN(seconds)) {
+    return undefined;
+  }
+
+  return (minutes * 60 + seconds) * 1000;
+}
+
+function sendTimerStringAlertToCogs(timerString) {
   if (
-    !timeoutsReportedThisShow.has(timestampAsInt) ||
+    !timeoutsReportedThisShow.has(timerString) ||
     allowMultipleReportsPerShow
   ) {
-    console.log(`Alerting for ${formatTime(timestampAsInt)}`);
-    cogsConnection.sendEvent("Timestamp reached", timestampAsInt);
+    console.log(`Alerting for ${timerString}`);
+    cogsConnection.sendEvent("Time reached", timerString);
 
-    timeoutsReportedThisShow.add(timestampAsInt);
+    timeoutsReportedThisShow.add(timerString);
   }
 }
 
@@ -42,12 +58,13 @@ function setAlertTimeouts() {
 
   // Clear previous timeouts
   if (Object.keys(alertTimeouts).length > 0) {
-    // Check for timestamps that have been skipped past. This can happen when the timer is manually adjusted to a new value
-    // whilst it is ticking
+    // Check for timestamps that have been skipped past.
+    // This can happen when the timer is manually adjusted to a new value whilst it is ticking
     if (timerTicking && reportIfSkippedPast) {
-      Object.keys(alertTimeouts).forEach((timestamp) => {
-        if (timerDurationMillis <= timestamp * 1000) {
-          sendTimestampAlertToCogs(timestamp);
+      Object.keys(alertTimeouts).forEach((timerString) => {
+        const timerStringInMillis = timeInMillisFromTimerString(timerString);
+        if (timerDurationMillis <= timerStringInMillis) {
+          sendTimerStringAlertToCogs(timerString);
         }
       });
     }
@@ -56,9 +73,10 @@ function setAlertTimeouts() {
     // This deals with the case where the timer stops at 00:00 which otherwise can cause
     // a race condition where the alert is not triggered
     if (!timerTicking) {
-      Object.keys(alertTimeouts).forEach((timestamp) => {
-        if (timerDurationMillis <= timestamp * 1000) {
-          sendTimestampAlertToCogs(timestamp);
+      Object.keys(alertTimeouts).forEach((timerString) => {
+        const timerStringInMillis = timeInMillisFromTimerString(timerString);
+        if (timerDurationMillis <= timerStringInMillis) {
+          sendTimerStringAlertToCogs(timerString);
         }
       });
     }
@@ -68,19 +86,21 @@ function setAlertTimeouts() {
     alertTimeouts = {};
   }
 
-  if (timerTicking && timestampsToReport.length > 0) {
-    for (const timestamp of timestampsToReport) {
+  if (timerTicking && timerStringsToReport.length > 0) {
+    for (const timerString of timerStringsToReport) {
+      const timerStringInMillis = timeInMillisFromTimerString(timerString);
       const timeToAlert =
-        timerDurationMillis - timestamp * 1000 - (now - timerStartedTickingAt);
+        timerDurationMillis -
+        timerStringInMillis -
+        (now - timerStartedTickingAt);
+
       if (timeToAlert > 0) {
-        console.log(
-          `Setting alert for ${formatTime(timestamp)} in ${timeToAlert}ms`
-        );
+        console.log(`Setting alert for ${timerString} in ${timeToAlert}ms`);
 
-        alertTimeouts[timestamp] = setTimeout(() => {
-          sendTimestampAlertToCogs(timestamp);
+        alertTimeouts[timerString] = setTimeout(() => {
+          sendTimerStringAlertToCogs(timerString);
 
-          delete alertTimeouts[timestamp];
+          delete alertTimeouts[timerString];
         }, timeToAlert);
       }
     }
@@ -94,15 +114,15 @@ function sendTimerStateToCogs() {
 }
 
 cogsConnection.addEventListener("config", ({ config }) => {
-  // Timestamps to report
-  if (config["Timestamps to report"] !== undefined) {
-    // Unique numeric timestamps
-    timestampsToReport = [
+  // Times to report
+  if (config["Times to report"] !== undefined) {
+    // Unique timer strings
+    timerStringsToReport = [
       ...new Set(
-        config["Timestamps to report"]
+        config["Times to report"]
           .split(",")
-          .map((x) => parseInt(x))
-          .filter((x) => !isNaN(x))
+          .map((x) => x.trim())
+          .filter((x) => isValidTimerString(x))
       ),
     ];
 

@@ -5,7 +5,7 @@
   "icon": "alarm-plus",
   "config": [
     {
-      "name": "Timestamps to report",
+      "name": "Times to report",
       "value": { "type": "string", "default": "" }
     },
     {
@@ -32,8 +32,8 @@
     "fromCogs": [],
     "toCogs": [
       {
-        "name": "Timestamp reached",
-        "value": { "type": "number" }
+        "name": "Time reached",
+        "value": { "type": "string" }
       }
     ]
   }
